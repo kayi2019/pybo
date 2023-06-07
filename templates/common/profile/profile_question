@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% load pybo_filter %}
+{% block content %}
+<h4 class="border-bottom pb-2 my-3">{{profile_user.username]}</h4>
+{% include "common/profile/profile_tabs.html" %}
+

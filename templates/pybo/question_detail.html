@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+
+<script type ="text/javascript">
+function ReverseDisplay(id) {
+    t =document.getElementById(id);
+    if( t.style.display  == 'block')
+    {
+        t.style.display = 'none';
+    }
+    else if(t.style.display == 'none'){
+        t.style.display = 'block';
+    }
+}
+function resize(obj) {
+    obj.style.height = '1px';
+    obj.style.height = (12 + obj.scrollHeight) + 'px';
+    document.getElementById(obj.id).focus();
+    obj.focus();
+}
+function text(c1, c2) {
+    t1 = document.getElementById(c1);
+    t2 = document.getElementById(c2);
+    t2.value=t1.innerText;
+}
+</script>
+
+<div>
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+    {% for message in messages %}
+        <strong>{{ message.tags }}</strong>
+        <ul><li>{{ message.message }}</li></ul>
+    {% endfor %}
+    </div>
+    {% endif %}
+    <!-- 질문 -->
+    <p class="border-bottom py-2">카테고리 : {{question.category.name}}</p>
+    <h2 class="border-bottom py-2">{{ question.subject }}</h2>
+    <div class="card my-3">
+        <div class="card-body">
+            <div class="card-text text-center text-break">{{ question.content | mark }}</div>
+            <div class="d-flex justify-content-end">
+                {% if question.modify_date %}
+                <div class="badge bg-light text-dark p-2 text-start mx-3">
+                    <div class="mb-2">modified at</div>
+                    <div>{{ question.modify_date }}</div> <!-- 수정일자-->
+                </div>
+                {% endif %}
+                <div class="badge bg-light text-dark p-2 text-start">
+                    <div class ="mb-2">{{ question.author.username }}</div>
+                    <div>{{ question.create_date }}</div>
+                </div>
+            </div>
+            <div class="my-3">
+                <a href="javascript:void(0)" data-uri="{% url 'pybo:question_vote' question.id  %}"
+               class="recommend btn btn-sm btn-outline-primary"> 추천
+                    <span class="badge rounded-pill bg-success">{{question.voter.count}}</span>
+                </a>
+                {% if request.user == question.author %}
+                <a href="{% url 'pybo:question_modify' question.id  %}"
+                    class="btn btn-sm btn-outline-secondary">수정</a>
+                <a href="javascript:void(0)" class="delete btn btn-sm btn-outline-secondary"
+                    data-uri="{% url 'pybo:question_delete' question.id  %}">삭제</a>
+                {% endif %}
+                <a class ="btn btn-sm btn-outline-primary float:right " onclick="ReverseDisplay('question_comment')">댓글</a>
+
+                <!--질문 댓글-->
+                <div id="question_comment" style="display:none">
+                    {% for q_comment in q_comment_list %}
+                    {% if q_comment.question %}
+                    {% if q_comment.answer == None %}
+                    <a id="comment_{{ q_comment.id }}"></a>
+
+                    <div class="card my-2">
+                        <div class="card-body">
+                             <div class="mb-2">{{ q_comment.author.username }}</div>
+                            <div class="row">
+                                <div class="col-md-10">
+                                    <div>
+                                        <div class="collapse show multi-collapse_{{q_comment.id}} card-text border border-secondary"
+                                             id="{{q_comment.id}}_div">{{q_comment.content | mark }}</div>
+                                    </div>
+
+                                    <div>
+                                        <form method="post" action="../../comment/modify/{{q_comment.id}}/">
+                                             <!-- 오류표시 Start -->
+                                            {% if form.errors %}
+                                            <div class="alert alert-danger" role="alert">
+                                                {% for field in form %}
+                                                {% if field.errors %}
+                                                <div>
+                                                    <strong>{{ field.label }}</strong>
+                                                    {{ field.errors }}
+                                                </div>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                            <!-- 오류표시 End -->
+                                            {% csrf_token %}
+<!--                                            onkeydown="resize(this);" onkeyup="resize(this);" onfocusin="resize(this);" onload="resize(this);"-->
+                                            <textarea class="collapse multi-collapse_{{q_comment.id}} card-text border border-secondary form-control"
+                                                  id="{{q_comment.id}}_text" name="content"
+                                                   >
+                                             </textarea>
+                                                <input class="collapse multi-collapse_{{q_comment.id}} border border-secondary btn" type="submit"
+                                                       value="수정하기"
+                                                       id="{{q_comment.id}}_submit"></input>
+
+                                                <button class="collapse multi-collapse_{{q_comment.id}} border border-secondary btn-close" type="button" data-bs-toggle="collapse"
+                                                    data-bs-target=".multi-collapse_{{q_comment.id}}" aria-expanded="false"
+                                                    aria-controls="{{q_comment.id}}_div {{q_comment.id}}_text" id="{{q_comment.id}}_cancel"
+                                                    onclick="text('{{q_comment.id}}_div', '{{q_comment.id}}_text');"></button>
+
+
+
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-1"></div>
+                                <div class="container col-md-1">
+                                    <div class="d-flex justify-content-end">
+                                        <div class="row">
+                                        {% if q_comment.modify_date %}
+                                        <div class="badge bg-light text-dark p-2 text-start mx-3">
+                                            <div style="color:blue">수정:{{ q_comment.modify_date }}</div>
+                                        </div>
+                                        {% endif %}
+                                        <div class="badge bg-light text-dark p-2 text-start mx-3">
+                                            <div>{{ q_comment.create_date }}</div>  <!--작성일자-->
+                                        </div>
+                                            </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script type="text/javascript">
+                                text();
+                            </script>
+
+                            <div class="my-3">
+                                <a href="javascript:void(0)" data-uri="{% url 'pybo:comment_vote' q_comment.id  %}"
+                                   class="recommend btn btn-sm btn-outline-secondary"> 추천
+                                    <span class="badge rounded-pill bg-success">{{q_comment.voter.count}}</span>
+                                </a>
+                                {% if request.user == q_comment.author %}
+                                <button class="btn btn-primary" type="button" data-bs-toggle="collapse"
+                                        data-bs-target=".multi-collapse_{{q_comment.id}}" aria-expanded="false"
+                                        aria-controls="{{q_comment.id}}_div {{q_comment.id}}_text" id="{{q_comment.id}}_btn"
+                                        onclick="text('{{q_comment.id}}_div', '{{q_comment.id}}_text');">수정</button>
+                                <a href="#" class="delete btn btn-sm btn-outline-secondary"
+                                   data-uri="{% url 'pybo:comment_delete' q_comment.id  %}">삭제</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                    <form action="{% url 'pybo:comment_create_q' question.id %}" method="post"
+                        class="my-3">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <textarea name="content" class="form-control" rows="3"></textarea>
+                        </div>
+                        <input type="submit" value="댓글등록" class="btn btn-primary">
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% if check == 1 %}
+        <script type="text/javascript">
+            ReverseDisplay('question_comment');
+        </script>
+        {% endif %}
+    </div>
+
+    <!-- 답변 -->
+    <h5 class="border-bottom my-3 py-2">{{question.answer_set.count}}개의 답변이 있습니다.>
+
+        <a class ="btn border-top border-secondary float:right " href = "{% url  'pybo:detail' question.id 1 %}">최신순</a>
+
+        <a class="btn border-top border-secondary float:right " href = "{% url  'pybo:detail' question.id 2 %}">추천순</a>
+
+
+    </h5>
+
+    {% for answer in answer_list %}
+    <a id="answer_{{ answer.id }}"></a>
+    <div class="card my-3">
+        <div class="card-body">
+            <div class="card-text">{{ answer.content | mark }}</div>
+            <div class="d-flex justify-content-end">
+                {% if answer.modify_date %}
+                <div class="badge bg-light text-dark p-2 text-start mx-3">
+                    <div class="mb-2">modified at</div>
+                    <div style="color:blue">{{ answer.modify_date }}</div>
+                </div>
+                {% endif %}
+                <div class="badge bg-light text-dark p-2 text-start">
+                    <div class="mb-2">{{ answer.author.username }}</div>
+                    <div>{{ answer.create_date }}</div>  <!--작성일자-->
+                </div>
+            </div>
+            <div class="my-3">
+                <a href="javascript:void(0)" data-uri="{% url 'pybo:answer_vote' answer.id  %}"
+                    class="recommend btn btn-sm btn-outline-secondary"> 추천
+                    <span class="badge rounded-pill bg-success">{{answer.voter.count}}</span>
+                </a>
+            {% if request.user == answer.author %}
+            <a href="{% url 'pybo:answer_modify' answer.id  %}"
+               class="btn btn-sm btn-outline-secondary">수정</a>
+            <a href="#" class="delete btn btn-sm btn-outline-secondary"
+               data-uri="{% url 'pybo:answer_delete' answer.id  %}">삭제</a>
+            {% endif %}
+                <a class ="btn btn-sm btn-outline-primary float:right " onclick="ReverseDisplay('{{answer.id}}_comment')">댓글</a>
+            </div>
+
+            <div id="{{answer.id}}_comment" style="display:none">
+
+                {% for a_comment in q_comment_list %}
+                {% if a_comment.answer == answer %}
+                <!-- 코멘트 구분  -->
+                <a id="comment_{{ a_comment.id }}"></a>
+                <div class="card my-2">
+                    <div class="card-body">
+                        <div class="mb-2">{{ a_comment.author.username }}</div>
+                        <div class="row">
+                            <div class="col-md-10">
+                                <div>
+                                    <div class="collapse show multi-collapse_{{a_comment.id}} card-text border border-secondary"
+                                         id="{{a_comment.id}}_div">{{a_comment.content | mark }}</div>
+                                </div>
+                                <div>
+                                    <form method="post" action="../../comment/modify/{{a_comment.id}}/">
+                                        <!-- 오류표시 Start -->
+                                        {% if form.errors %}
+                                        <div class="alert alert-danger" role="alert">
+                                            {% for field in form %}
+                                            {% if field.errors %}
+                                            <div>
+                                                <strong>{{ field.label }}</strong>
+                                                {{ field.errors }}
+                                            </div>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <!-- 오류표시 End -->
+                                        {% csrf_token %}
+                                        <textarea class="collapse multi-collapse_{{a_comment.id}} card-text border border-secondary form-control"
+                                                  id="{{a_comment.id}}_text" name="content"></textarea>
+                                        <input class="collapse multi-collapse_{{a_comment.id}} border border-secondary btn" type="submit"
+                                               value="수정하기" id="{{a_comment.id}}_submit"></input>
+                                        <button class="collapse multi-collapse_{{a_comment.id}} border border-secondary btn-close" type="button" data-bs-toggle="collapse"
+                                                data-bs-target=".multi-collapse_{{a_comment.id}}" aria-expanded="false"
+                                                aria-controls="{{a_comment.id}}_div {{a_comment.id}}_text" id="{{a_comment.id}}_cancel"
+                                                onclick="text('{{a_comment.id}}_div', '{{a_comment.id}}_text');"></button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-md-1"></div>
+                            <div class="container col-md-1">
+                                <div class="d-flex justify-content-end">
+                                    <div class="row">
+                                        {% if a_comment.modify_date %}
+                                        <div class="badge bg-light text-dark p-2 text-start mx-3">
+                                            <div style="color:blue">수정:{{ a_comment.modify_date }}</div>
+                                        </div>
+                                        {% endif %}
+                                        <div class="badge bg-light text-dark p-2 text-start mx-3">
+                                            <div>{{ a_comment.create_date }}</div>  <!--작성일자-->
+                                        </div>
+                                            </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script type="text/javascript">
+                                text();
+                            </script>
+
+                            <div class="my-3">
+                                <a href="javascript:void(0)" data-uri="{% url 'pybo:comment_vote' a_comment.id  %}"
+                                   class="recommend btn btn-sm btn-outline-secondary"> 추천
+                                    <span class="badge rounded-pill bg-success">{{a_comment.voter.count}}</span>
+                                </a>
+                                {% if request.user == a_comment.author %}
+                                <button class="btn btn-primary" type="button" data-bs-toggle="collapse"
+                                        data-bs-target=".multi-collapse_{{a_comment.id}}" aria-expanded="false"
+                                        aria-controls="{{a_comment.id}}_div {{a_comment.id}}_text" id="{{a_comment.id}}_btn"
+                                        onclick="text('{{a_comment.id}}_div', '{{a_comment.id}}_text');">수정</button>
+                                <a href="#" class="delete btn btn-sm btn-outline-secondary"
+                                   data-uri="{% url 'pybo:comment_delete' a_comment.id  %}">삭제</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    <form action="{% url 'pybo:comment_create_answer' answer.id %}" method="post"
+                        class="my-3">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <textarea name="content" class="form-control" rows="3"></textarea>
+                        </div>
+                        <input type="submit" value="댓글등록" class="btn btn-primary">
+                    </form>
+                </div>
+                </div>
+        </div>
+    </div>
+    {% endfor %}
+
+
+    <!-- 답변 페이징-->
+        <ul class='pagination justify-content-center'>
+            {% if answer_list.has_previous %}
+                <li class='page-item'>
+                <a class='page-link' href='?page={{ answer_list.previous_page_number }}'>이전</a>
+                </li>
+            {% else %}
+                <li class='page-item-disabled'>
+                <a class='page-link' tabindex='-1' aria-disabled='true' href='#'>이전</a>
+                </li>
+            {% endif %}
+            {% for page_number in answer_list.paginator.page_range %}
+            {% if page_number >= answer_list.number|add:-5 and page_number <= answer_list.number|add:5 %}
+                {% if page_number == answer_list.number %}
+                <li class='page-item active' aria-current='page'>
+                    <a class='page-link' href='?page={{ page_number }}'>{{ page_number }}</a>
+                </li>
+                {% else %}
+                <li class='page-item'>
+                    <a class='page-link' href='?page={{ page_number }}'>{{ page_number }}</a>
+                </li>
+                {% endif%}
+            {% endif %}
+            {% endfor %}
+            {% if answer_list.has_next %}
+            <li class='page-item'>
+                <a class='page-link' href='?page={{ answer_list.next_page_number }}'>다음</a>
+            </li>
+            {% else %}
+            <li class='page-item disabled'>
+                <a class='page-link' tabindex='-1' aria-disabled='true' href='#'>다음</a>
+            </li>
+            {% endif %}
+        </ul>
+
+
+    <!-- 답변 등록 -->
+    {% if question.category.can_answer %}
+    <form action="{% url 'pybo:answer_create' question.id %}" method="post" class="my-3">
+        {% csrf_token %}
+        <!-- 오류표시 Start -->
+        {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for field in form %}
+            {% if field.errors %}
+            <div>
+                <strong>{{ field.label }}</strong>
+                {{ field.errors }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        <!-- 오류표시 End -->
+        <div class="form-group">
+            <textarea name="content" id="content" class="form-control" rows="10"></textarea>
+        </div>
+        <input type="submit" value="답변등록" class="btn btn-primary">
+    </form>
+    {% endif %}
+
+    {% if not question.category.can_answer %}
+    <h1>답변이 불가능한 게시판입니다</h1>
+    {% endif %}
+</div>
+{% endblock %}
+{% block script %}
+<script type='text/javascript'>
+const delete_elements = document.getElementsByClassName("delete");
+Array.from(delete_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        if(confirm("정말로 삭제하시겠습니까?")) {
+            location.href = this.dataset.uri;
+        };
+    });
+});
+
+const recommend_elements = document.getElementsByClassName("recommend");
+Array.from(recommend_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        if(confirm("정말로 추천하시겠습니까?")) {
+            location.href = this.dataset.uri;
+        };
+    });
+});
+</script>
+{% endblock %}
